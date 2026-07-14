@@ -1,0 +1,31 @@
+Instructions
+Use this prompt with Claude or another AI coding assistant to recreate or customize this app for your own family. Once the HTML file is generated, download it and deploy it for free with Netlify by creating a free account. Netlify also includes an AI agent that can help you build, customize, and host your project, making it even easier to create this app from the provided prompt.
+
+Important: This app uses your browser's local storage to save data. All points and settings are stored only on the device where the app is used and are not synchronized across devices. To keep an accurate record of points, use the same device each time. For the best experience, add the link to your home screen so it launches like a native app. Open the Netlify link in browser → Tap Share → Add to Home Screen → Enable "Open as Web App" (if prompted). 
+
+📋 The Original Prompt
+🎯 Core Idea
+Build a colorful chore and task tracking app for 2 kids as a single downloadable HTML file that works as a web app on Android phone/iPad (saved to home screen via any browser).
+
+🖥️ Layout & Design
+Two separate kid dashboards as tabs at the top
+Tab labels should show the kid's actual name (customizable)
+Theme with bright, colorful kid-friendly design
+Each chore displayed as a colorful card with a toggle switch
+Cumulative points displayed at the top of each kid's dashboard
+✅ Chores & Points
+Default starter chores: Make bed (5pts), Help with dishes (5pts), Practice (10pts), Exercise/Play outdoors (10pts), Tidy room (10pts), Cleanup after eating (5pts), Help cleaning living room (10pts), Homework (15pts)
+Tapping a chore card toggles it on/off and adds/deducts points accordingly
+A manual point adjustment field on each kid's page — type any positive or negative number and tap Apply to instantly update their total
+⚠️ Penalties
+A separate Penalties section in Settings where you can add negative-point items if needed (e.g. not eating vegetables/fruits −10 pts, too much screen time −20 pts)
+⚙️ Settings Panel
+Rename each kid (names update everywhere including tabs)
+Add, edit, and delete chores with custom names and point values
+Add, edit, and delete penalty items with custom names and point values
+Total Reset should happen only with confirmation
+A separate "Reset today's switches" button on each kid's dashboard that clears daily toggles without wiping cumulative points
+🔧 Technical Requirements
+Single self-contained HTML file, no external dependencies
+Uses localStorage to persist all data (points, names, chores, today's switches) between sessions
+Includes apple-mobile-web-app-capable meta tags so it works cleanly when added to iPad home screen

@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Chore Champs</title>
+
+<!-- iOS home-screen app behavior -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Chore Champs">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#FF7A29">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23FF7A29'/%3E%3Cstop offset='1' stop-color='%2300B3A4'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='36' fill='url(%23g)'/%3E%3Crect x='4' y='4' width='172' height='172' rx='32' fill='none' stroke='%231B1B1B' stroke-width='8'/%3E%3Cpath d='M90 32 L104 68 L143 68 L111 91 L123 128 L90 106 L57 128 L69 91 L37 68 L76 68 Z' fill='%23FFF8EC' stroke='%231B1B1B' stroke-width='6' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='36' fill='%23FF7A29'/%3E%3Cpath d='M90 32 L104 68 L143 68 L111 91 L123 128 L90 106 L57 128 L69 91 L37 68 L76 68 Z' fill='%23FFF8EC'/%3E%3C/svg%3E">
+
+<style>
+  :root{
+    --ink:#1b1b1b;
+    --paper:#fff8ec;
+    --paper-dim:#f4ecd8;
+    --green:#2fb872;
+    --red:#e8442c;
+    --shadow-sm:3px 3px 0 var(--ink);
+    --shadow-md:5px 5px 0 var(--ink);
+    --shadow-lg:8px 8px 0 var(--ink);
+    --radius:16px;
+  }
+  [data-kid-theme="a"]{ --accent:#ff7a29; --accent-dark:#c9560f; --accent-soft:#ffe3c2; }
+  [data-kid-theme="b"]{ --accent:#00b3a4; --accent-dark:#00786e; --accent-soft:#c8f5f0; }
+
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle, rgba(27,27,27,.07) 1.6px, transparent 1.6px) 0 0/20px 20px,
+      var(--paper);
+    min-height:100vh;
+    -webkit-tap-highlight-color:transparent;
+    overscroll-behavior-y:contain;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .display{
+    font-family:"Arial Black", "Segoe UI Black", -apple-system, sans-serif;
+    font-weight:900;
+    letter-spacing:.02em;
+  }
+  button{ font-family:inherit; cursor:pointer; }
+  input{ font-family:inherit; }
+
+  .app{ max-width:640px; margin:0 auto; padding:14px 14px 100px; }
+
+  /* ---------- Header / Tabs ---------- */
+  header.top{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 4px 16px;
+  }
+  .brand{
+    display:flex; align-items:center; gap:8px;
+  }
+  .brand-star{
+    width:34px; height:34px; flex:none;
+    background:var(--ink);
+    clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+    animation:spin-slow 9s linear infinite;
+  }
+  @keyframes spin-slow{ from{transform:rotate(0)} to{transform:rotate(360deg)} }
+  .brand h1{
+    font-size:22px; margin:0; text-transform:uppercase;
+    -webkit-text-stroke:1px var(--ink);
+    color:var(--paper);
+    text-shadow:2px 2px 0 var(--ink);
+  }
+
+  .tabs{
+    display:flex; gap:8px; padding:0 4px 14px;
+  }
+  .tab{
+    flex:1;
+    border:3px solid var(--ink);
+    border-radius:14px 14px 4px 4px;
+    background:var(--paper);
+    box-shadow:var(--shadow-sm);
+    padding:10px 6px;
+    font-weight:800;
+    text-align:center;
+    font-size:15px;
+    transform:translateY(4px);
+    transition:transform .12s, box-shadow .12s, background .15s;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .tab.active{
+    background:var(--accent);
+    color:var(--paper);
+    transform:translateY(0);
+    box-shadow:var(--shadow-md);
+  }
+
+  /* ---------- Points banner ---------- */
+  .points-banner{
+    position:relative;
+    border:3px solid var(--ink);
+    border-radius:var(--radius);
+    background:var(--accent-soft);
+    box-shadow:var(--shadow-lg);
+    padding:22px 18px;
+    text-align:center;
+    overflow:hidden;
+    margin-bottom:16px;
+  }
+  .points-banner::before{
+    content:"";
+    position:absolute; top:-40%; right:-15%;
+    width:180px; height:180px;
+    background:var(--accent);
+    opacity:.25;
+    clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+    animation:spin-slow 16s linear infinite reverse;
+  }
+  .points-label{
+    font-size:13px; letter-spacing:.15em; text-transform:uppercase;
+    font-weight:800; opacity:.75; position:relative;
+  }
+  .points-value{
+    font-size:clamp(48px,15vw,72px);
+    line-height:1;
+    color:var(--accent-dark);
+    -webkit-text-stroke:2px var(--ink);
+    text-shadow:3px 3px 0 rgba(27,27,27,.15);
+    position:relative;
+    display:inline-block;
+  }
+  .points-value.bump{ animation:bump .38s cubic-bezier(.34,1.6,.64,1); }
+  @keyframes bump{ 0%{transform:scale(1)} 40%{transform:scale(1.22) rotate(-3deg)} 100%{transform:scale(1)} }
+
+  /* ---------- Manual adjustment ---------- */
+  .adjust-row{
+    display:flex; gap:8px; margin-bottom:20px;
+  }
+  .adjust-row input{
+    flex:1; min-width:0;
+    border:3px solid var(--ink); border-radius:12px;
+    padding:10px 12px; font-size:16px; font-weight:700;
+    background:var(--paper);
+  }
+  .btn{
+    border:3px solid var(--ink); border-radius:12px;
+    background:var(--paper); font-weight:800; padding:10px 16px;
+    box-shadow:var(--shadow-sm);
+    transform:translateY(0);
+    transition:transform .08s, box-shadow .08s;
+  }
+  .btn:active{ transform:translate(3px,3px); box-shadow:0 0 0 var(--ink); }
+  .btn-primary{ background:var(--accent); color:var(--paper); }
+  .btn-danger{ background:var(--red); color:var(--paper); }
+  .btn-block{ width:100%; }
+  .btn-ghost{ background:transparent; }
+  .btn-sm{ padding:6px 10px; font-size:13px; border-width:2px; box-shadow:2px 2px 0 var(--ink); border-radius:9px; }
+
+  /* ---------- Section headers ---------- */
+  .section-title{
+    font-size:13px; text-transform:uppercase; letter-spacing:.12em;
+    font-weight:800; margin:18px 4px 10px; opacity:.7;
+  }
+
+  /* ---------- Chore / penalty cards ---------- */
+  .card-grid{ display:grid; gap:10px; grid-template-columns:1fr; }
+  .card{
+    position:relative;
+    display:flex; align-items:center; gap:12px;
+    border:3px solid var(--ink); border-radius:var(--radius);
+    background:var(--paper);
+    box-shadow:var(--shadow-sm);
+    padding:12px 14px;
+    transition:background .18s, box-shadow .18s, transform .18s;
+  }
+  .card.on{
+    background:var(--accent);
+    color:var(--paper);
+    box-shadow:var(--shadow-md);
+  }
+  .card.penalty.on{ background:var(--red); }
+  .card-icon{ font-size:26px; flex:none; }
+  .card-body{ flex:1; min-width:0; }
+  .card-name{ font-weight:800; font-size:15.5px; }
+  .card-pts{ font-size:12.5px; font-weight:700; opacity:.75; }
+  .stamp{
+    position:absolute; top:-10px; right:8px;
+    background:var(--green); color:var(--paper);
+    width:28px; height:28px; border-radius:50%;
+    border:2px solid var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; font-weight:900;
+    transform:scale(0) rotate(-20deg);
+    animation:stamp-in .32s cubic-bezier(.34,1.7,.64,1) forwards;
+  }
+  .penalty .stamp{ background:var(--ink); }
+  @keyframes stamp-in{ to{ transform:scale(1) rotate(-12deg); } }
+
+  /* toggle switch */
+  .switch{
+    flex:none; width:52px; height:30px; border-radius:20px;
+    border:3px solid var(--ink); background:var(--paper-dim);
+    position:relative;
+  }
+  .card.on .switch{ background:rgba(255,255,255,.35); }
+  .switch::after{
+    content:""; position:absolute; top:1px; left:1px;
+    width:20px; height:20px; border-radius:50%;
+    background:var(--paper); border:2px solid var(--ink);
+    transition:transform .18s cubic-bezier(.34,1.6,.64,1);
+  }
+  .card.on .switch::after{ transform:translateX(22px); background:var(--ink); }
+
+  details.collapse{
+    border:3px solid var(--ink); border-radius:var(--radius);
+    background:var(--paper); box-shadow:var(--shadow-sm);
+    margin-top:18px; padding:2px 4px;
+  }
+  details.collapse summary{
+    list-style:none; cursor:pointer; padding:12px 10px;
+    font-weight:800; display:flex; align-items:center; gap:8px;
+  }
+  details.collapse summary::-webkit-details-marker{ display:none; }
+  details.collapse[open] summary{ border-bottom:2px dashed var(--ink); margin-bottom:10px; }
+  details.collapse .card-grid{ padding:0 10px 12px; }
+
+  .reset-today{ margin-top:22px; }
+
+  /* ---------- Settings FAB + Drawer ---------- */
+  .fab{
+    position:fixed; right:18px; bottom:calc(18px + env(safe-area-inset-bottom));
+    width:58px; height:58px; border-radius:50%;
+    border:3px solid var(--ink); background:var(--ink); color:var(--paper);
+    font-size:24px; box-shadow:var(--shadow-md);
+    display:flex; align-items:center; justify-content:center;
+    z-index:40;
+  }
+  .fab:active{ transform:translate(3px,3px); box-shadow:0 0 0 var(--ink); }
+
+  .overlay{
+    position:fixed; inset:0; background:rgba(27,27,27,.5);
+    opacity:0; pointer-events:none; transition:opacity .2s; z-index:50;
+  }
+  .overlay.show{ opacity:1; pointer-events:auto; }
+
+  .drawer{
+    position:fixed; top:0; right:0; height:100%; width:min(400px,92vw);
+    background:var(--paper); border-left:3px solid var(--ink);
+    box-shadow:-8px 0 0 rgba(27,27,27,.08);
+    transform:translateX(100%); transition:transform .25s cubic-bezier(.3,.9,.4,1);
+    z-index:60; overflow-y:auto;
+    padding:18px 16px calc(40px + env(safe-area-inset-bottom));
+  }
+  .drawer.show{ transform:translateX(0); }
+  .drawer-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .drawer-head h2{ margin:0; font-size:20px; text-transform:uppercase; }
+
+  .field{ margin-bottom:12px; }
+  .field label{ display:block; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; opacity:.7; margin-bottom:4px; }
+  .field input{ width:100%; border:3px solid var(--ink); border-radius:10px; padding:9px 10px; font-size:15px; font-weight:700; background:var(--paper); }
+
+  .manage-row{
+    display:flex; align-items:center; gap:8px;
+    border:2px solid var(--ink); border-radius:12px; padding:8px 10px; margin-bottom:8px;
+    background:var(--paper-dim);
+  }
+  .manage-row .mname{ flex:1; font-weight:700; font-size:14.5px; }
+  .manage-row .mpts{ font-size:12.5px; font-weight:800; opacity:.7; margin-right:4px; }
+
+  .add-form{
+    display:grid; grid-template-columns:1fr 74px; gap:6px; margin-top:6px;
+  }
+  .add-form input{ border:2px solid var(--ink); border-radius:10px; padding:8px; font-weight:700; }
+  .add-form .add-actions{ grid-column:1 / -1; display:flex; gap:6px; justify-content:flex-end; }
+
+  .danger-zone{
+    margin-top:24px; border:3px dashed var(--red); border-radius:var(--radius);
+    padding:12px; background:#fdece9;
+  }
+  .danger-zone h3{ margin:0 0 8px; font-size:14px; text-transform:uppercase; color:var(--red); }
+  .danger-zone .btn{ margin-bottom:8px; }
+
+  /* ---------- Confirm modal ---------- */
+  .modal{
+    position:fixed; inset:0; z-index:80; display:flex; align-items:center; justify-content:center;
+    padding:20px; opacity:0; pointer-events:none; transition:opacity .18s;
+  }
+  .modal.show{ opacity:1; pointer-events:auto; }
+  .modal-card{
+    background:var(--paper); border:3px solid var(--ink); border-radius:var(--radius);
+    box-shadow:var(--shadow-lg); padding:20px; max-width:340px; width:100%;
+    transform:scale(.9); transition:transform .18s;
+  }
+  .modal.show .modal-card{ transform:scale(1); }
+  .modal-card p{ font-weight:700; margin:0 0 16px; }
+  .modal-actions{ display:flex; gap:8px; justify-content:flex-end; }
+
+  .empty-hint{ font-size:13px; opacity:.6; font-weight:600; padding:6px 4px; }
+
+  /* confetti */
+  .confetti-layer{ position:fixed; inset:0; pointer-events:none; z-index:90; overflow:hidden; }
+  .confetti-piece{
+    position:absolute; width:8px; height:8px; top:0; left:0;
+    animation:confetti-fall .9s ease-out forwards;
+  }
+  @keyframes confetti-fall{
+    to{ transform:translate(var(--dx),var(--dy)) rotate(var(--rot)); opacity:0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app" id="app" data-kid-theme="a">
+
+  <header class="top">
+    <div class="brand">
+      <div class="brand-star"></div>
+      <h1 class="display">Chore Champs</h1>
+    </div>
+  </header>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div id="kidPanel"></div>
+
+  <button class="fab" id="settingsBtn" aria-label="Settings">⚙️</button>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <h2 class="display">Settings</h2>
+    <button class="btn btn-sm" id="closeDrawer">✕</button>
+  </div>
+
+  <div class="section-title">Kid Names</div>
+  <div class="field">
+    <label for="nameInputA">Player 1</label>
+    <input type="text" id="nameInputA" maxlength="16">
+  </div>
+  <div class="field">
+    <label for="nameInputB">Player 2</label>
+    <input type="text" id="nameInputB" maxlength="16">
+  </div>
+
+  <div class="section-title">Chores</div>
+  <div id="choreManageList"></div>
+  <div class="add-form">
+    <input type="text" id="newChoreName" placeholder="New chore name">
+    <input type="number" id="newChorePts" placeholder="Pts" value="5">
+    <div class="add-actions"><button class="btn btn-primary btn-sm" id="addChoreBtn">+ Add Chore</button></div>
+  </div>
+
+  <div class="section-title">Penalties</div>
+  <div id="penaltyManageList"></div>
+  <div class="add-form">
+    <input type="text" id="newPenaltyName" placeholder="New penalty name">
+    <input type="number" id="newPenaltyPts" placeholder="Pts" value="-10">
+    <div class="add-actions"><button class="btn btn-danger btn-sm" id="addPenaltyBtn">+ Add Penalty</button></div>
+  </div>
+
+  <div class="danger-zone">
+    <h3>Danger Zone</h3>
+    <button class="btn btn-danger btn-block" id="resetKidABtn"></button>
+    <button class="btn btn-danger btn-block" id="resetKidBBtn"></button>
+  </div>
+</aside>
+
+<div class="modal" id="confirmModal">
+  <div class="modal-card">
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button class="btn" id="confirmCancel">Cancel</button>
+      <button class="btn btn-danger" id="confirmOk">Yes, do it</button>
+    </div>
+  </div>
+</div>
+
+<div class="confetti-layer" id="confettiLayer"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = "choreChampsData_v1";
+  var CONFETTI_COLORS = ["#ff7a29","#00b3a4","#ffd23f","#e8442c","#2fb872"];
+
+  var CHORE_ICONS = {
+    c1:"🛏️", c2:"🍽️", c3:"🎯", c4:"🌳", c5:"🧸", c6:"🧹", c7:"🛋️", c8:"📚"
+  };
+
+  function defaultData(){
+    return {
+      kids: [
+        { id:"a", name:"Player 1", points:0, todayChores:{}, todayPenalties:{} },
+        { id:"b", name:"Player 2", points:0, todayChores:{}, todayPenalties:{} }
+      ],
+      chores: [
+        { id:"c1", name:"Make bed", points:5 },
+        { id:"c2", name:"Help with dishes", points:5 },
+        { id:"c3", name:"Practice", points:10 },
+        { id:"c4", name:"Exercise / Play outdoors", points:10 },
+        { id:"c5", name:"Tidy room", points:10 },
+        { id:"c6", name:"Cleanup after eating", points:5 },
+        { id:"c7", name:"Help cleaning living room", points:10 },
+        { id:"c8", name:"Homework", points:15 }
+      ],
+      penalties: [
+        { id:"p1", name:"Not eating veggies / fruit", points:-10 },
+        { id:"p2", name:"Too much screen time", points:-20 }
+      ],
+      activeKid: "a"
+    };
+  }
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return defaultData();
+      var parsed = JSON.parse(raw);
+      var def = defaultData();
+      // shallow-merge so old saves gain any new fields introduced later
+      return Object.assign({}, def, parsed);
+    }catch(e){
+      return defaultData();
+    }
+  }
+
+  function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+  var state = loadState();
+  var nextId = 1000; // for generated chore/penalty ids
+
+  function findKid(id){ return state.kids.filter(function(k){ return k.id===id; })[0]; }
+  function themeFor(kidId){ return kidId === state.kids[0].id ? "a" : "b"; }
+
+  // ---------- rendering ----------
+  function renderAll(){
+    renderTabs();
+    renderKidPanel();
+    renderSettingsFields();
+    document.getElementById("app").setAttribute("data-kid-theme", themeFor(state.activeKid));
+  }
+
+  function renderTabs(){
+    var wrap = document.getElementById("tabs");
+    wrap.innerHTML = state.kids.map(function(k){
+      var active = k.id === state.activeKid ? " active" : "";
+      return '<button class="tab'+active+'" data-action="switch-tab" data-kid="'+k.id+'">'+escapeHtml(k.name)+'</button>';
+    }).join("");
+  }
+
+  function cardHtml(item, isOn, kind){
+    var icon = kind === "penalty" ? "⚠️" : (CHORE_ICONS[item.id] || "⭐");
+    var sign = item.points >= 0 ? "+" : "";
+    var onClass = isOn ? " on" : "";
+    var stamp = isOn ? '<div class="stamp">✓</div>' : "";
+    return (
+      '<div class="card '+kind+onClass+'" data-action="toggle-'+kind+'" data-id="'+item.id+'">'+
+        stamp+
+        '<div class="card-icon">'+icon+'</div>'+
+        '<div class="card-body">'+
+          '<div class="card-name">'+escapeHtml(item.name)+'</div>'+
+          '<div class="card-pts">'+sign+item.points+' pts</div>'+
+        '</div>'+
+        '<div class="switch"></div>'+
+      '</div>'
+    );
+  }
+
+  function renderKidPanel(){
+    var kid = findKid(state.activeKid);
+    var choresHtml = state.chores.map(function(c){
+      return cardHtml(c, !!kid.todayChores[c.id], "chore");
+    }).join("") || '<div class="empty-hint">No chores yet — add some in Settings.</div>';
+
+    var penaltiesHtml = state.penalties.map(function(p){
+      return cardHtml(p, !!kid.todayPenalties[p.id], "penalty");
+    }).join("") || '<div class="empty-hint">No penalties added.</div>';
+
+    document.getElementById("kidPanel").innerHTML =
+      '<div class="points-banner">'+
+        '<div class="points-label">'+escapeHtml(kid.name)+'\'s Points</div>'+
+        '<div class="points-value display" id="pointsValue">'+kid.points+'</div>'+
+      '</div>'+
+
+      '<div class="adjust-row">'+
+        '<input type="number" id="adjustInput" placeholder="e.g. 5 or -5" inputmode="numeric">'+
+        '<button class="btn btn-primary" id="applyAdjustBtn">Apply</button>'+
+      '</div>'+
+
+      '<div class="section-title">Today\'s Chores</div>'+
+      '<div class="card-grid">'+choresHtml+'</div>'+
+
+      '<details class="collapse">'+
+        '<summary>⚠️ Penalties</summary>'+
+        '<div class="card-grid">'+penaltiesHtml+'</div>'+
+      '</details>'+
+
+      '<button class="btn btn-ghost btn-block reset-today" id="resetTodayBtn">↺ Reset Today\'s Switches</button>';
+  }
+
+  function renderSettingsFields(){
+    document.getElementById("nameInputA").value = state.kids[0].name;
+    document.getElementById("nameInputB").value = state.kids[1].name;
+    document.getElementById("resetKidABtn").textContent = "Reset " + state.kids[0].name + "'s Total Points";
+    document.getElementById("resetKidBBtn").textContent = "Reset " + state.kids[1].name + "'s Total Points";
+
+    document.getElementById("choreManageList").innerHTML = state.chores.map(function(c){
+      return manageRowHtml(c, "chore");
+    }).join("");
+    document.getElementById("penaltyManageList").innerHTML = state.penalties.map(function(p){
+      return manageRowHtml(p, "penalty");
+    }).join("");
+  }
+
+  function manageRowHtml(item, kind){
+    return (
+      '<div class="manage-row" data-id="'+item.id+'" data-kind="'+kind+'">'+
+        '<span class="mname">'+escapeHtml(item.name)+'</span>'+
+        '<span class="mpts">'+(item.points>=0?"+":"")+item.points+'</span>'+
+        '<button class="btn btn-sm" data-action="edit-item">✎</button>'+
+        '<button class="btn btn-sm" data-action="delete-item">🗑</button>'+
+      '</div>'
+    );
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  // ---------- points / toggles ----------
+  function bumpPoints(){
+    var el = document.getElementById("pointsValue");
+    if(!el) return;
+    el.classList.remove("bump");
+    void el.offsetWidth; // restart animation
+    el.classList.add("bump");
+  }
+
+  function toggleItem(kind, id, cardEl){
+    var kid = findKid(state.activeKid);
+    var list = kind === "chore" ? state.chores : state.penalties;
+    var bucket = kind === "chore" ? kid.todayChores : kid.todayPenalties;
+    var item = list.filter(function(i){ return i.id === id; })[0];
+    if(!item) return;
+
+    var turningOn = !bucket[id];
+    bucket[id] = turningOn;
+    kid.points += turningOn ? item.points : -item.points;
+
+    saveState();
+    renderKidPanel();
+    bumpPoints();
+    if(turningOn && cardEl) burstConfetti(cardEl);
+  }
+
+  function applyAdjustment(){
+    var input = document.getElementById("adjustInput");
+    var val = parseInt(input.value, 10);
+    if(isNaN(val) || val === 0) return;
+    var kid = findKid(state.activeKid);
+    kid.points += val;
+    input.value = "";
+    saveState();
+    renderKidPanel();
+    bumpPoints();
+  }
+
+  function resetTodaySwitches(){
+    var kid = findKid(state.activeKid);
+    kid.todayChores = {};
+    kid.todayPenalties = {};
+    saveState();
+    renderKidPanel();
+  }
+
+  // ---------- confetti ----------
+  function burstConfetti(originEl){
+    var rect = originEl.getBoundingClientRect();
+    var layer = document.getElementById("confettiLayer");
+    var originX = rect.left + rect.width/2;
+    var originY = rect.top + rect.height/2;
+    for(var i=0;i<16;i++){
+      var piece = document.createElement("div");
+      piece.className = "confetti-piece";
+      var angle = Math.random()*Math.PI*2;
+      var dist = 60 + Math.random()*70;
+      piece.style.left = originX + "px";
+      piece.style.top = originY + "px";
+      piece.style.background = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+      piece.style.borderRadius = Math.random() > .5 ? "50%" : "3px";
+      piece.style.setProperty("--dx", (Math.cos(angle)*dist)+"px");
+      piece.style.setProperty("--dy", (Math.sin(angle)*dist - 20)+"px");
+      piece.style.setProperty("--rot", (Math.random()*540-270)+"deg");
+      layer.appendChild(piece);
+      (function(p){ setTimeout(function(){ p.remove(); }, 950); })(piece);
+    }
+  }
+
+  // ---------- chore/penalty management ----------
+  function addItem(kind){
+    var nameInput = document.getElementById(kind==="chore" ? "newChoreName" : "newPenaltyName");
+    var ptsInput = document.getElementById(kind==="chore" ? "newChorePts" : "newPenaltyPts");
+    var name = nameInput.value.trim();
+    var pts = parseInt(ptsInput.value, 10);
+    if(!name || isNaN(pts)) return;
+    var id = "x" + (nextId++);
+    var list = kind === "chore" ? state.chores : state.penalties;
+    list.push({ id:id, name:name, points:pts });
+    nameInput.value = "";
+    ptsInput.value = kind === "chore" ? 5 : -10;
+    saveState();
+    renderSettingsFields();
+    renderKidPanel();
+  }
+
+  function deleteItem(kind, id){
+    var listKey = kind === "chore" ? "chores" : "penalties";
+    state[listKey] = state[listKey].filter(function(i){ return i.id !== id; });
+    var bucketKey = kind === "chore" ? "todayChores" : "todayPenalties";
+    state.kids.forEach(function(k){ delete k[bucketKey][id]; });
+    saveState();
+    renderSettingsFields();
+    renderKidPanel();
+  }
+
+  function editItem(kind, id, rowEl){
+    var listKey = kind === "chore" ? "chores" : "penalties";
+    var item = state[listKey].filter(function(i){ return i.id === id; })[0];
+    if(!item) return;
+    var newName = prompt("Name:", item.name);
+    if(newName === null) return;
+    var newPtsRaw = prompt("Points:", item.points);
+    if(newPtsRaw === null) return;
+    var newPts = parseInt(newPtsRaw, 10);
+    if(!newName.trim() || isNaN(newPts)) return;
+    item.name = newName.trim();
+    item.points = newPts;
+    saveState();
+    renderSettingsFields();
+    renderKidPanel();
+  }
+
+  // ---------- confirm modal ----------
+  var pendingConfirm = null;
+  function askConfirm(message, onYes){
+    document.getElementById("confirmMsg").textContent = message;
+    pendingConfirm = onYes;
+    document.getElementById("confirmModal").classList.add("show");
+  }
+  function closeConfirm(){
+    document.getElementById("confirmModal").classList.remove("show");
+    pendingConfirm = null;
+  }
+
+  // ---------- drawer ----------
+  function openDrawer(){
+    renderSettingsFields();
+    document.getElementById("drawer").classList.add("show");
+    document.getElementById("overlay").classList.add("show");
+  }
+  function closeDrawer(){
+    document.getElementById("drawer").classList.remove("show");
+    document.getElementById("overlay").classList.remove("show");
+  }
+
+  // ---------- wire up events ----------
+  document.getElementById("settingsBtn").addEventListener("click", openDrawer);
+  document.getElementById("closeDrawer").addEventListener("click", closeDrawer);
+  document.getElementById("overlay").addEventListener("click", function(){ closeDrawer(); closeConfirm(); });
+
+  document.getElementById("confirmCancel").addEventListener("click", closeConfirm);
+  document.getElementById("confirmOk").addEventListener("click", function(){
+    if(pendingConfirm) pendingConfirm();
+    closeConfirm();
+  });
+
+  document.getElementById("nameInputA").addEventListener("input", function(e){
+    state.kids[0].name = e.target.value || "Player 1";
+    saveState(); renderTabs(); renderSettingsFields();
+    if(state.activeKid === state.kids[0].id) renderKidPanel();
+  });
+  document.getElementById("nameInputB").addEventListener("input", function(e){
+    state.kids[1].name = e.target.value || "Player 2";
+    saveState(); renderTabs(); renderSettingsFields();
+    if(state.activeKid === state.kids[1].id) renderKidPanel();
+  });
+
+  document.getElementById("addChoreBtn").addEventListener("click", function(){ addItem("chore"); });
+  document.getElementById("addPenaltyBtn").addEventListener("click", function(){ addItem("penalty"); });
+
+  document.getElementById("resetKidABtn").addEventListener("click", function(){
+    askConfirm("Reset " + state.kids[0].name + "'s total points to 0? This can't be undone.", function(){
+      state.kids[0].points = 0; saveState();
+      if(state.activeKid === state.kids[0].id) renderKidPanel();
+    });
+  });
+  document.getElementById("resetKidBBtn").addEventListener("click", function(){
+    askConfirm("Reset " + state.kids[1].name + "'s total points to 0? This can't be undone.", function(){
+      state.kids[1].points = 0; saveState();
+      if(state.activeKid === state.kids[1].id) renderKidPanel();
+    });
+  });
+
+  // event delegation for tabs, cards, drawer rows, adjust/reset buttons
+  document.body.addEventListener("click", function(e){
+    var actionEl = e.target.closest("[data-action]");
+    if(!actionEl) return;
+    var action = actionEl.dataset.action;
+
+    if(action === "switch-tab"){
+      state.activeKid = actionEl.dataset.kid;
+      saveState();
+      renderAll();
+    } else if(action === "toggle-chore"){
+      toggleItem("chore", actionEl.dataset.id, actionEl);
+    } else if(action === "toggle-penalty"){
+      toggleItem("penalty", actionEl.dataset.id, actionEl);
+    } else if(action === "edit-item"){
+      var row = actionEl.closest(".manage-row");
+      editItem(row.dataset.kind, row.dataset.id, row);
+    } else if(action === "delete-item"){
+      var row2 = actionEl.closest(".manage-row");
+      var kindLabel = row2.dataset.kind === "chore" ? "chore" : "penalty";
+      askConfirm("Delete this " + kindLabel + "?", function(){
+        deleteItem(row2.dataset.kind, row2.dataset.id);
+      });
+    }
+
+    if(actionEl.id === "applyAdjustBtn") applyAdjustment();
+    if(actionEl.id === "resetTodayBtn") resetTodaySwitches();
+  });
+
+  document.body.addEventListener("keydown", function(e){
+    if(e.key === "Enter" && e.target.id === "adjustInput") applyAdjustment();
+  });
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
