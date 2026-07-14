@@ -259,6 +259,40 @@
   .drawer-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
   .drawer-head h2{ margin:0; font-size:20px; text-transform:uppercase; }
 
+  .drawer.drawer-left{
+    left:0; right:auto;
+    border-left:none; border-right:3px solid var(--ink);
+    box-shadow:8px 0 0 rgba(27,27,27,.08);
+    transform:translateX(-100%);
+  }
+  .drawer.drawer-left.show{ transform:translateX(0); }
+
+  .history-btn{
+    position:relative; z-index:1;
+    background:var(--paper); border:2px solid var(--ink); border-radius:20px;
+    box-shadow:2px 2px 0 var(--ink); padding:6px 12px; font-size:12.5px; font-weight:800;
+    margin-top:10px; display:inline-flex; align-items:center; gap:5px;
+  }
+  .history-day{
+    border:2px solid var(--ink); border-radius:12px; margin-bottom:10px;
+    background:var(--paper-dim); overflow:hidden;
+  }
+  .history-day summary{
+    list-style:none; cursor:pointer; padding:10px 12px;
+    display:flex; align-items:center; justify-content:space-between; font-weight:800;
+  }
+  .history-day summary::-webkit-details-marker{ display:none; }
+  .history-day-total.pos{ color:var(--green); }
+  .history-day-total.neg{ color:var(--red); }
+  .history-day-body{ padding:0 12px 12px; }
+  .history-chip{
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:13px; font-weight:700; padding:5px 0; border-top:1px dashed rgba(27,27,27,.25);
+  }
+  .history-chip:first-child{ border-top:none; }
+  .history-chip .amt.pos{ color:var(--green); }
+  .history-chip .amt.neg{ color:var(--red); }
+
   .field{ margin-bottom:12px; }
   .field label{ display:block; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; opacity:.7; margin-bottom:4px; }
   .field input{ width:100%; border:3px solid var(--ink); border-radius:10px; padding:9px 10px; font-size:15px; font-weight:700; background:var(--paper); }
@@ -331,6 +365,15 @@
 </div>
 
 <div class="overlay" id="overlay"></div>
+
+<aside class="drawer drawer-left" id="historyDrawer">
+  <div class="drawer-head">
+    <h2 class="display">History</h2>
+    <button class="btn btn-sm" id="closeHistoryDrawer">✕</button>
+  </div>
+  <div id="historyList"></div>
+</aside>
+
 <aside class="drawer" id="drawer">
   <div class="drawer-head">
     <h2 class="display">Settings</h2>
@@ -396,8 +439,8 @@
   function defaultData(){
     return {
       kids: [
-        { id:"a", name:"Vedhanth", points:0, todayChores:{}, todayPenalties:{} },
-        { id:"b", name:"Varnika", points:0, todayChores:{}, todayPenalties:{} }
+        { id:"a", name:"Vedhanth", points:0, todayChores:{}, todayPenalties:{}, todayAdjustments:[], history:[] },
+        { id:"b", name:"Varnika", points:0, todayChores:{}, todayPenalties:{}, todayAdjustments:[], history:[] }
       ],
       chores: [
         { id:"c1", name:"Make bed", points:5 },
@@ -413,27 +456,98 @@
         { id:"p1", name:"Not eating veggies / fruit", points:-10 },
         { id:"p2", name:"Too much screen time", points:-20 }
       ],
-      activeKid: "a"
+      activeKid: "a",
+      lastRolloverDate: todayStr()
     };
   }
 
+  function todayStr(){
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = String(d.getMonth()+1).padStart(2,"0");
+    var day = String(d.getDate()).padStart(2,"0");
+    return y+"-"+m+"-"+day;
+  }
+
+  function formatDateLabel(dateStr){
+    var parts = dateStr.split("-").map(Number);
+    var d = new Date(parts[0], parts[1]-1, parts[2]);
+    return d.toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" });
+  }
+
   function loadState(){
+    var loaded;
     try{
       var raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return defaultData();
-      var parsed = JSON.parse(raw);
-      var def = defaultData();
-      // shallow-merge so old saves gain any new fields introduced later
-      return Object.assign({}, def, parsed);
+      if(!raw){ loaded = defaultData(); }
+      else{
+        var parsed = JSON.parse(raw);
+        var def = defaultData();
+        // shallow-merge so old saves gain any new fields introduced later
+        loaded = Object.assign({}, def, parsed);
+      }
     }catch(e){
-      return defaultData();
+      loaded = defaultData();
     }
+    // migrate kid records saved before history/daily-adjustment tracking existed
+    loaded.kids.forEach(function(k){
+      if(!k.todayAdjustments) k.todayAdjustments = [];
+      if(!k.history) k.history = [];
+    });
+    if(!loaded.lastRolloverDate) loaded.lastRolloverDate = todayStr();
+    return loaded;
   }
 
   function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
   var state = loadState();
+  saveState();
   var nextId = 1000; // for generated chore/penalty ids
+
+  // ---------- daily rollover & history ----------
+  function archiveDay(kid, dateStr){
+    var choresDone = Object.keys(kid.todayChores).filter(function(id){ return kid.todayChores[id]; })
+      .map(function(id){
+        var c = state.chores.filter(function(i){ return i.id===id; })[0];
+        return c ? { name:c.name, points:c.points } : { name:"Deleted chore", points:0 };
+      });
+    var penaltiesApplied = Object.keys(kid.todayPenalties).filter(function(id){ return kid.todayPenalties[id]; })
+      .map(function(id){
+        var p = state.penalties.filter(function(i){ return i.id===id; })[0];
+        return p ? { name:p.name, points:p.points } : { name:"Deleted penalty", points:0 };
+      });
+    var adjustments = kid.todayAdjustments.slice();
+
+    if(choresDone.length || penaltiesApplied.length || adjustments.length){
+      var dayTotal = choresDone.concat(penaltiesApplied).reduce(function(sum,i){ return sum+i.points; }, 0)
+        + adjustments.reduce(function(sum,a){ return sum+a.amount; }, 0);
+
+      var existing = kid.history[0] && kid.history[0].date === dateStr ? kid.history[0] : null;
+      if(existing){
+        existing.chores = existing.chores.concat(choresDone);
+        existing.penalties = existing.penalties.concat(penaltiesApplied);
+        existing.adjustments = existing.adjustments.concat(adjustments);
+        existing.dayTotal += dayTotal;
+      }else{
+        kid.history.unshift({ date:dateStr, chores:choresDone, penalties:penaltiesApplied, adjustments:adjustments, dayTotal:dayTotal });
+        if(kid.history.length > 60) kid.history.length = 60;
+      }
+    }
+
+    kid.todayChores = {};
+    kid.todayPenalties = {};
+    kid.todayAdjustments = [];
+  }
+
+  function checkDailyRollover(){
+    var today = todayStr();
+    if(state.lastRolloverDate === today) return false;
+    var closedDate = state.lastRolloverDate;
+    state.kids.forEach(function(k){ archiveDay(k, closedDate); });
+    state.lastRolloverDate = today;
+    saveState();
+    return true;
+  }
 
   function findKid(id){ return state.kids.filter(function(k){ return k.id===id; })[0]; }
   function themeFor(kidId){ return kidId === state.kids[0].id ? "a" : "b"; }
@@ -486,11 +600,12 @@
       '<div class="points-banner">'+
         '<div class="points-label">'+escapeHtml(kid.name)+'\'s Points</div>'+
         '<div class="points-value display" id="pointsValue">'+kid.points+'</div>'+
+        '<div><button class="history-btn" id="historyBtn" data-action="open-history">📅 History</button></div>'+
       '</div>'+
 
       '<div class="adjust-row">'+
         '<input type="number" id="adjustInput" placeholder="e.g. 5 or -5" inputmode="numeric">'+
-        '<button class="btn btn-primary" id="applyAdjustBtn">Apply</button>'+
+        '<button class="btn btn-primary" id="applyAdjustBtn" data-action="apply-adjustment">Apply</button>'+
       '</div>'+
 
       '<div class="section-title">Today\'s Chores</div>'+
@@ -501,7 +616,7 @@
         '<div class="card-grid">'+penaltiesHtml+'</div>'+
       '</details>'+
 
-      '<button class="btn btn-ghost btn-block reset-today" id="resetTodayBtn">↺ Reset Today\'s Switches</button>';
+      '<button class="btn btn-ghost btn-block reset-today" id="resetTodayBtn" data-action="reset-today">✅ Save Today &amp; Reset Switches</button>';
   }
 
   function renderSettingsFields(){
@@ -567,6 +682,7 @@
     if(isNaN(val) || val === 0) return;
     var kid = findKid(state.activeKid);
     kid.points += val;
+    kid.todayAdjustments.push({ amount:val, label:"Manual adjustment" });
     input.value = "";
     saveState();
     renderKidPanel();
@@ -575,8 +691,7 @@
 
   function resetTodaySwitches(){
     var kid = findKid(state.activeKid);
-    kid.todayChores = {};
-    kid.todayPenalties = {};
+    archiveDay(kid, todayStr());
     saveState();
     renderKidPanel();
   }
@@ -660,6 +775,44 @@
     pendingConfirm = null;
   }
 
+  // ---------- history drawer ----------
+  function renderHistory(){
+    var kid = findKid(state.activeKid);
+    if(!kid.history.length){
+      document.getElementById("historyList").innerHTML = '<div class="empty-hint">No past days yet. Once today rolls over (or you tap "Reset Today\'s Switches"), it\'ll show up here.</div>';
+      return;
+    }
+    document.getElementById("historyList").innerHTML = kid.history.map(function(day, idx){
+      var totalClass = day.dayTotal >= 0 ? "pos" : "neg";
+      var totalSign = day.dayTotal >= 0 ? "+" : "";
+      var rows = day.chores.map(function(c){ return historyChip(c.name, c.points); }).join("")
+        + day.penalties.map(function(p){ return historyChip(p.name, p.points); }).join("")
+        + day.adjustments.map(function(a){ return historyChip(a.label, a.amount); }).join("");
+      return (
+        '<details class="history-day"'+(idx===0?" open":"")+'>'+
+          '<summary><span>'+formatDateLabel(day.date)+'</span><span class="history-day-total '+totalClass+'">'+totalSign+day.dayTotal+' pts</span></summary>'+
+          '<div class="history-day-body">'+(rows || '<div class="empty-hint">Nothing logged.</div>')+'</div>'+
+        '</details>'
+      );
+    }).join("");
+  }
+
+  function historyChip(name, points){
+    var cls = points >= 0 ? "pos" : "neg";
+    var sign = points >= 0 ? "+" : "";
+    return '<div class="history-chip"><span>'+escapeHtml(name)+'</span><span class="amt '+cls+'">'+sign+points+'</span></div>';
+  }
+
+  function openHistoryDrawer(){
+    renderHistory();
+    document.getElementById("historyDrawer").classList.add("show");
+    document.getElementById("overlay").classList.add("show");
+  }
+  function closeHistoryDrawer(){
+    document.getElementById("historyDrawer").classList.remove("show");
+    document.getElementById("overlay").classList.remove("show");
+  }
+
   // ---------- drawer ----------
   function openDrawer(){
     renderSettingsFields();
@@ -674,7 +827,8 @@
   // ---------- wire up events ----------
   document.getElementById("settingsBtn").addEventListener("click", openDrawer);
   document.getElementById("closeDrawer").addEventListener("click", closeDrawer);
-  document.getElementById("overlay").addEventListener("click", function(){ closeDrawer(); closeConfirm(); });
+  document.getElementById("closeHistoryDrawer").addEventListener("click", closeHistoryDrawer);
+  document.getElementById("overlay").addEventListener("click", function(){ closeDrawer(); closeHistoryDrawer(); closeConfirm(); });
 
   document.getElementById("confirmCancel").addEventListener("click", closeConfirm);
   document.getElementById("confirmOk").addEventListener("click", function(){
@@ -723,6 +877,12 @@
       toggleItem("chore", actionEl.dataset.id, actionEl);
     } else if(action === "toggle-penalty"){
       toggleItem("penalty", actionEl.dataset.id, actionEl);
+    } else if(action === "open-history"){
+      openHistoryDrawer();
+    } else if(action === "apply-adjustment"){
+      applyAdjustment();
+    } else if(action === "reset-today"){
+      resetTodaySwitches();
     } else if(action === "edit-item"){
       var row = actionEl.closest(".manage-row");
       editItem(row.dataset.kind, row.dataset.id, row);
@@ -733,13 +893,17 @@
         deleteItem(row2.dataset.kind, row2.dataset.id);
       });
     }
-
-    if(actionEl.id === "applyAdjustBtn") applyAdjustment();
-    if(actionEl.id === "resetTodayBtn") resetTodaySwitches();
   });
 
   document.body.addEventListener("keydown", function(e){
     if(e.key === "Enter" && e.target.id === "adjustInput") applyAdjustment();
+  });
+
+  // catch the midnight rollover if the app is left open, or was opened on a new day
+  checkDailyRollover();
+  setInterval(function(){ if(checkDailyRollover()) renderAll(); }, 60000);
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "visible" && checkDailyRollover()) renderAll();
   });
 
   renderAll();
