@@ -396,8 +396,8 @@
   function defaultData(){
     return {
       kids: [
-        { id:"a", name:"Player 1", points:0, todayChores:{}, todayPenalties:{} },
-        { id:"b", name:"Player 2", points:0, todayChores:{}, todayPenalties:{} }
+        { id:"a", name:"Vedhanth", points:0, todayChores:{}, todayPenalties:{} },
+        { id:"b", name:"Varnika", points:0, todayChores:{}, todayPenalties:{} }
       ],
       chores: [
         { id:"c1", name:"Make bed", points:5 },
@@ -683,12 +683,12 @@
   });
 
   document.getElementById("nameInputA").addEventListener("input", function(e){
-    state.kids[0].name = e.target.value || "Player 1";
+    state.kids[0].name = e.target.value || "Vedhanth";
     saveState(); renderTabs(); renderSettingsFields();
     if(state.activeKid === state.kids[0].id) renderKidPanel();
   });
   document.getElementById("nameInputB").addEventListener("input", function(e){
-    state.kids[1].name = e.target.value || "Player 2";
+    state.kids[1].name = e.target.value || "Varnika";
     saveState(); renderTabs(); renderSettingsFields();
     if(state.activeKid === state.kids[1].id) renderKidPanel();
   });
